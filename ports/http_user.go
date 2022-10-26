@@ -2,7 +2,6 @@ package ports
 
 import (
 	"encoding/json"
-	"fmt"
 	"it-test/adapters/psql"
 	"it-test/app/query"
 	"it-test/domain"
@@ -24,8 +23,6 @@ func (h HTTPServer) PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Request %+v\n\n", createUserRequest)
-
 	userModel := psql.User{
 		UserName:  createUserRequest.UserName,
 		LastName:  createUserRequest.LastName,
@@ -35,8 +32,6 @@ func (h HTTPServer) PostUser(w http.ResponseWriter, r *http.Request) {
 		Mobile:    createUserRequest.Mobile,
 		ASZF:      createUserRequest.Aszf,
 	}
-
-	fmt.Printf("Model %+v\n\n", userModel)
 
 	err = h.app.Queries.InsertUser.Handle(ctx, &query.CreateUser{Model: &userModel})
 	if err != nil {
