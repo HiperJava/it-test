@@ -49,3 +49,17 @@ func (r *UserPSQLRepository) InsertUser(ctx context.Context, user *User) error {
 
 	return nil
 }
+
+func (r *UserPSQLRepository) UpdateUser(ctx context.Context, user *User) error {
+	_, err := r.db.WithContext(ctx).
+		Model(user).
+		Column("user_name", "last_name", "first_name", "password", "mobile").
+		WherePK().
+		Returning("*").
+		Update()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

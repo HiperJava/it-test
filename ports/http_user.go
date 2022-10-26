@@ -2,6 +2,7 @@ package ports
 
 import (
 	"encoding/json"
+	"errors"
 	"it-test/adapters/psql"
 	"it-test/app/query"
 	"it-test/domain"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
+	"github.com/go-pg/pg/v10"
 	"github.com/google/uuid"
 )
 
@@ -58,8 +60,48 @@ func (h HTTPServer) GetUserList(w http.ResponseWriter, r *http.Request, params G
 }
 
 func (h HTTPServer) UpdateUserDetails(w http.ResponseWriter, r *http.Request, id string) {
-	//TODO implement me
-	panic("implement me")
+	ctx := r.Context()
+	var createUserRequest = new(UpdateUser)
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&createUserRequest)
+	if err != nil {
+		httperr.InternalError(domain.ErrorInternalServerErrorLabel, updateUser, uuid.NewString(), err, w, r)
+		return
+	}
+
+	userModel := psql.User{
+		ID:        id,
+		UserName:  createUserRequest.UserName,
+		LastName:  createUserRequest.LastName,
+		FirstName: createUserRequest.FirstName,
+		Password:  createUserRequest.Password,
+		Mobile:    createUserRequest.Mobile,
+	}
+
+	err = h.app.Queries.UpdateUser.Handle(ctx, &query.UpdateUser{Model: &userModel})
+	if err != nil {
+		if errors.Is(err, pg.ErrNoRows) {
+			errorBody := httperr.NewErrorMessageBody(domain.ErrorUserNotFound, "server", updateUser, uuid.NewString())
+			httperr.NotFound(*errorBody, err, w, r)
+			return
+		}
+
+		httperr.InternalError(domain.ErrorInternalServerErrorLabel, updateUser, uuid.NewString(), err, w, r)
+		return
+	}
+
+	response := GetUser{
+		Aszf:      userModel.ASZF,
+		Email:     userModel.Email,
+		FirstName: userModel.FirstName,
+		Id:        uuid.MustParse(userModel.ID),
+		LastName:  userModel.LastName,
+		Mobile:    userModel.Mobile,
+		UserName:  userModel.UserName,
+	}
+
+	render.Respond(w, r, response)
 }
 
 func (h HTTPServer) Count(w http.ResponseWriter, r *http.Request) {
