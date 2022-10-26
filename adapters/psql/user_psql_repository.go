@@ -16,7 +16,7 @@ type User struct {
 	Password  string   `sql:"password,notnull"`
 	Email     string   `sql:"email,notnull"`
 	Mobile    string   `sql:"mobile,notnull"`
-	ASZF      bool     `sql:"aszf,notnull"`
+	ASZF      bool     `sql:"aszf,notnull" pg:",use_zero"`
 }
 
 type UserPSQLRepository struct {
@@ -37,4 +37,15 @@ func (r *UserPSQLRepository) GetUserCount(
 		return 0, err
 	}
 	return count, nil
+}
+
+func (r *UserPSQLRepository) InsertUser(ctx context.Context, user *User) error {
+	_, err := r.db.WithContext(ctx).
+		Model(user).
+		Insert()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
