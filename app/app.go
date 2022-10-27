@@ -18,4 +18,5 @@ type Queries struct {
 	GetUserCount *query.GetUserCountHandler
 	InsertUser   *query.CreateUserHandler
 	UpdateUser   *query.UpdateUserHandler
+	ListUser     *query.ListUserHandler
 }

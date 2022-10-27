@@ -88,6 +88,7 @@ func newApplication(ctx context.Context, cfg *config.AppConfig, deps *Dependenci
 			GetUserCount: query.NewGetUserCountHandler(userRepository),
 			InsertUser:   query.NewCreateUserHandler(userRepository),
 			UpdateUser:   query.NewUpdateUserHandler(userRepository),
+			ListUser:     query.NewListUserHandler(userRepository),
 		},
 		AppConfig: cfg,
 	}

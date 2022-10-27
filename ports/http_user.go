@@ -55,8 +55,44 @@ func (h HTTPServer) PostUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h HTTPServer) GetUserList(w http.ResponseWriter, r *http.Request, params GetUserListParams) {
-	//TODO implement me
-	panic("implement me")
+	ctx := r.Context()
+
+	paginate := psql.Paginate{
+		PageIndex: params.PageIndex,
+		PageSize:  params.Limit,
+		OrderBy:   params.OrderBy,
+		Order:     params.Order,
+	}
+	userFilter := psql.UserListFilter{Email: params.EmailFilter}
+
+	users, count, err := h.app.Queries.ListUser.Handle(ctx, &query.ListUser{Paginate: &paginate, Filter: &userFilter})
+	if err != nil {
+		httperr.InternalError(domain.ErrorInternalServerErrorLabel, listUser, uuid.NewString(), err, w, r)
+		return
+	}
+
+	userListResults := make([]UserListItem, 0, len(users))
+
+	for _, userModel := range users {
+		userListItem := UserListItem{
+			Aszf:      userModel.ASZF,
+			Email:     userModel.Email,
+			FirstName: userModel.FirstName,
+			Id:        uuid.MustParse(userModel.ID),
+			LastName:  userModel.LastName,
+			Mobile:    userModel.Mobile,
+			UserName:  userModel.UserName,
+		}
+
+		userListResults = append(userListResults, userListItem)
+	}
+
+	response := UserList{
+		Results:       userListResults,
+		ResultsLength: count,
+	}
+
+	render.Respond(w, r, response)
 }
 
 func (h HTTPServer) UpdateUserDetails(w http.ResponseWriter, r *http.Request, id string) {

@@ -2,8 +2,10 @@ package psql
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/go-pg/pg/v10/orm"
 )
 
 type User struct {
@@ -17,6 +19,20 @@ type User struct {
 	Email     string   `sql:"email,notnull"`
 	Mobile    string   `sql:"mobile,notnull"`
 	ASZF      bool     `sql:"aszf,notnull" pg:",use_zero"`
+}
+
+type UserListFilter struct {
+	Email *string
+}
+
+func (f UserListFilter) toQuery() func(q *orm.Query) (*orm.Query, error) {
+	return func(q *orm.Query) (*orm.Query, error) {
+		if f.Email != nil {
+			q = q.Where("email ILIKE ?", fmt.Sprintf("%%%s%%", *f.Email))
+		}
+
+		return q, nil
+	}
 }
 
 type UserPSQLRepository struct {
@@ -62,4 +78,19 @@ func (r *UserPSQLRepository) UpdateUser(ctx context.Context, user *User) error {
 	}
 
 	return nil
+}
+
+func (r *UserPSQLRepository) ListUser(ctx context.Context, paginate *Paginate, filter *UserListFilter) ([]User, int, error) {
+	var users []User
+
+	count, err := r.db.WithContext(ctx).
+		Model(&users).
+		Apply(filter.toQuery()).
+		Apply(paginate.toQuery()).
+		SelectAndCount()
+	if err != nil {
+		return users, count, nil
+	}
+
+	return users, count, nil
 }
