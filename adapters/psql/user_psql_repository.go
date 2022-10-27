@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -19,6 +20,33 @@ type User struct {
 	Email     string   `sql:"email,notnull"`
 	Mobile    string   `sql:"mobile,notnull"`
 	ASZF      bool     `sql:"aszf,notnull" pg:",use_zero"`
+}
+
+func (u *User) hashPassword() error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	u.Password = string(hash)
+
+	return nil
+}
+
+func (u *User) BeforeUpdate(c context.Context) (context.Context, error) {
+	if err := u.hashPassword(); err != nil {
+		return c, err
+	}
+
+	return c, nil
+}
+
+func (u *User) BeforeInsert(c context.Context) (context.Context, error) {
+	if err := u.hashPassword(); err != nil {
+		return c, err
+	}
+
+	return c, nil
 }
 
 type UserListFilter struct {
